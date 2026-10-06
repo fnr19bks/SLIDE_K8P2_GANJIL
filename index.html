@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pattern Recognition & Abstraction — Kelas VIII</title>
+<style>
+  :root{
+    --bg:#061428;
+    --bg2:#0B2545;
+    --card:rgba(255,255,255,.07);
+    --line:rgba(120,200,255,.28);
+    --accent:#22D3EE;
+    --accent2:#FBBF24;
+    --green:#4ADE80;
+    --text:#EAF3FC;
+    --muted:#A8C0DA;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#03101F;
+    font-family:"Segoe UI",Inter,system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    color:var(--text);-webkit-font-smoothing:antialiased}
+
+  #stage{
+    position:absolute;top:50%;left:50%;
+    width:1280px;height:720px;
+    transform-origin:center center;
+    background:
+      radial-gradient(900px 520px at 12% -10%, #14406e 0%, transparent 60%),
+      radial-gradient(800px 500px at 105% 110%, #0d3b56 0%, transparent 62%),
+      linear-gradient(160deg,var(--bg) 0%, var(--bg2) 100%);
+    border-radius:18px;overflow:hidden;
+    box-shadow:0 30px 90px rgba(0,0,0,.65);
+  }
+  #stage::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(115deg,rgba(34,211,238,.06),transparent 40%,rgba(251,191,36,.05));
+  }
+
+  .slide{
+    position:absolute;inset:0;padding:46px 62px 54px;
+    opacity:0;visibility:hidden;
+    transform:translateY(26px) scale(.985);
+    transition:opacity .5s ease, transform .55s cubic-bezier(.22,.9,.3,1), visibility .5s;
+    display:flex;flex-direction:column;gap:16px;
+  }
+  .slide.active{opacity:1;visibility:visible;transform:none}
+
+  /* ---------- TYPO ---------- */
+  .eyebrow{
+    font-size:15px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;
+  }
+  h1.title{font-size:44px;line-height:1.1;font-weight:800;letter-spacing:-.5px}
+  h2.title{font-size:38px;line-height:1.12;font-weight:800;letter-spacing:-.4px}
+  .sub{font-size:22px;color:var(--muted)}
+  .lead{font-size:25px;line-height:1.45;color:#D7E7F7;max-width:1050px}
+  .hl{color:var(--accent2)}
+  .hl2{color:var(--accent)}
+
+  ul.bullets{list-style:none;display:flex;flex-direction:column;gap:13px;margin-top:4px}
+  ul.bullets li{
+    font-size:26px;line-height:1.35;padding-left:44px;position:relative;
+  }
+  ul.bullets li::before{
+    content:"";position:absolute;left:8px;top:13px;width:16px;height:16px;
+    border-radius:5px;background:linear-gradient(135deg,var(--accent),#0ea5b7);
+    box-shadow:0 0 14px rgba(34,211,238,.55);
+  }
+  ul.bullets.gold li::before{background:linear-gradient(135deg,var(--accent2),#d97706);box-shadow:0 0 14px rgba(251,191,36,.5)}
+
+  ol.steps{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:12px}
+  ol.steps li{
+    counter-increment:s;font-size:25px;line-height:1.35;padding-left:56px;position:relative;
+  }
+  ol.steps li::before{
+    content:counter(s);position:absolute;left:0;top:-2px;width:36px;height:36px;
+    display:grid;place-items:center;border-radius:50%;
+    background:rgba(34,211,238,.15);border:2px solid var(--accent);
+    color:var(--accent);font-weight:800;font-size:18px;
+  }
+
+  /* ---------- CARDS ---------- */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:18px 20px;backdrop-filter:blur(4px);
+  }
+  .card h3{font-size:23px;font-weight:800;margin-bottom:7px;color:var(--accent)}
+  .card p{font-size:19px;line-height:1.4;color:#CBDFF2}
+  .card p small{font-size:15px;color:var(--muted)}
+  .card.gold h3{color:var(--accent2)}
+  .card.gold{border-color:rgba(251,191,36,.4)}
+
+  .chips{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{
+    font-size:17px;font-weight:700;padding:8px 16px;border-radius:999px;
+    background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.45);color:#B9F1FA;
+  }
+
+  /* ---------- TABLE ---------- */
+  table{width:100%;border-collapse:collapse;font-size:19px;border-radius:12px;overflow:hidden}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid rgba(120,200,255,.18);vertical-align:top}
+  th{background:rgba(34,211,238,.16);color:#BFF3FB;font-size:17px;letter-spacing:.03em}
+  td:first-child{font-weight:700;color:#EAF3FC;white-space:nowrap}
+  tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+  tr.hl-row td{background:rgba(251,191,36,.12)}
+  td.hl-cell{background:rgba(251,191,36,.18);font-weight:700;color:#FFE9B5}
+
+  /* ---------- FRAGMENTS ---------- */
+  .f{opacity:0;transform:translateY(16px);transition:opacity .45s ease, transform .45s cubic-bezier(.22,.9,.3,1)}
+  .f.show{opacity:1;transform:none}
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:fixed;left:0;right:0;bottom:14px;display:flex;align-items:center;
+    justify-content:center;gap:14px;z-index:50;
+  }
+  #hud button{
+    width:46px;height:46px;border-radius:50%;border:1px solid rgba(34,211,238,.5);
+    background:rgba(6,20,40,.85);color:var(--accent);font-size:18px;cursor:pointer;
+    display:grid;place-items:center;transition:.2s;
+  }
+  #hud button:hover{background:rgba(34,211,238,.2);transform:translateY(-2px)}
+  #counter{font-size:14px;color:#8FB0CE;font-weight:700;letter-spacing:.1em;min-width:70px;text-align:center}
+  #bar{position:fixed;left:0;bottom:0;height:4px;width:0%;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .35s ease;z-index:60}
+  #hint{
+    position:fixed;top:14px;right:18px;font-size:13px;color:#7E9EBD;z-index:50;
+    letter-spacing:.06em;transition:opacity .6s;
+  }
+
+  /* ---------- COVER / QUOTE ---------- */
+  .cover{justify-content:center;gap:22px;padding-left:78px}
+  .cover h1{font-size:62px;line-height:1.06;font-weight:900;letter-spacing:-1.2px}
+  .grad{background:linear-gradient(100deg,#22D3EE 10%,#FBBF24 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .cover .sub{font-size:24px}
+  .rule{width:110px;height:6px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .quote{font-size:30px;font-weight:800;line-height:1.3;color:#EAF3FC}
+  .big-q{font-size:38px;font-weight:800;color:var(--accent2);line-height:1.35;margin-top:10px}
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <!-- 1 — Cover -->
+  <section class="slide cover active">
+    <p class="eyebrow f">SMP NEGERI 19 KOTA BEKASI · TIM MGMP INFORMATIKA</p>
+    <div class="rule f"></div>
+    <h1 class="f">Pattern Recognition<br>&amp; <span class="grad">Abstraction</span></h1>
+    <p class="sub f">Informatika · Kelas VIII / Fase D · Elemen: Berpikir Komputasional</p>
+    <div class="chips f">
+      <span class="chip">Problem Based Learning</span>
+      <span class="chip">Cooperative Learning</span>
+      <span class="chip">Kurikulum Merdeka</span>
+    </div>
+  </section>
+
+  <!-- 2 — Peta Perjalanan -->
+  <section class="slide">
+    <p class="eyebrow">Peta Perjalanan</p>
+    <h2 class="title">Peta Perjalanan Hari Ini</h2>
+    <ul class="bullets">
+      <li class="f">Mengenali pola dari data/kejadian</li>
+      <li class="f">Memilih informasi penting (abstraction)</li>
+      <li class="f">Menyelesaikan masalah nyata</li>
+      <li class="f">Model: <b>Problem Based Learning</b></li>
+    </ul>
+  </section>
+
+  <!-- 3 — Apersepsi -->
+  <section class="slide">
+    <p class="eyebrow">Apersepsi</p>
+    <h2 class="title">Ingat Minggu Lalu?</h2>
+    <div class="grid g2">
+      <div class="card f">
+        <h3>Minggu Lalu</h3>
+        <p>Dekomposisi = pecah masalah besar</p>
+      </div>
+      <div class="card gold f">
+        <h3>Hari Ini</h3>
+        <p>Cari pola &amp; pilih yang penting</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 — Pertanyaan Pemantik -->
+  <section class="slide" style="justify-content:center;gap:22px">
+    <p class="eyebrow">Pertanyaan Pemantik</p>
+    <p class="big-q f">"Apa yang berulang di data ini?"</p>
+    <p class="big-q f">"Info mana yang benar-benar penting?"</p>
+  </section>
+
+  <!-- 5 — Apa itu Pattern Recognition? -->
+  <section class="slide">
+    <p class="eyebrow">Definisi</p>
+    <h2 class="title">Apa itu Pattern Recognition?</h2>
+    <ul class="bullets">
+      <li class="f">Mengenali kesamaan &amp; keteraturan</li>
+      <li class="f">Pola berulang dari data</li>
+      <li class="f">Tak perlu mulai dari nol</li>
+      <li class="f">Contoh: 1/2 + 1/4 &amp; 1/3 + 1/6</li>
+    </ul>
+  </section>
+
+  <!-- 6 — Contoh 1: Pola Jadwal -->
+  <section class="slide">
+    <p class="eyebrow">Contoh 1</p>
+    <h2 class="title">Pola Jadwal</h2>
+    <div class="f">
+      <table>
+        <tr><th>Hari</th><th>Jam 1</th><th>Jam 2</th><th>Jam 3</th></tr>
+        <tr><td>Senin</td><td>Matematika</td><td>Matematika</td><td>IPAS</td></tr>
+        <tr class="hl-row"><td>Selasa</td><td>B. Indonesia</td><td>IPA</td><td>IPA</td></tr>
+        <tr><td>Rabu</td><td>Matematika</td><td>Matematika</td><td>B. Inggris</td></tr>
+        <tr class="hl-row"><td>Kamis</td><td>B. Indonesia</td><td>IPA</td><td>IPA</td></tr>
+      </table>
+    </div>
+    <p class="lead f">✔ Selasa &amp; Kamis punya pola <span class="hl">identik</span>!</p>
+  </section>
+
+  <!-- 7 — Contoh 2: Pola Rute -->
+  <section class="slide">
+    <p class="eyebrow">Contoh 2</p>
+    <h2 class="title">Pola Rute</h2>
+    <div class="f">
+      <table>
+        <tr><th>Rute</th><th>Titik Berhenti</th><th>Waktu</th></tr>
+        <tr><td>A</td><td>Rumah → <b>Pasar</b> → Sekolah</td><td>15 mnt</td></tr>
+        <tr><td>B</td><td>Rumah → Masjid → <b>Pasar</b> → Sekolah</td><td>20 mnt</td></tr>
+        <tr><td>C</td><td>Rumah → Taman → <b>Pasar</b> → Sekolah</td><td>18 mnt</td></tr>
+      </table>
+    </div>
+    <p class="lead f">✔ Semua rute lewat <span class="hl">Pasar</span> = common pattern!</p>
+  </section>
+
+  <!-- 8 — Contoh 3: Pola Kantin -->
+  <section class="slide">
+    <p class="eyebrow">Contoh 3</p>
+    <h2 class="title">Pola Kantin</h2>
+    <div class="f">
+      <table>
+        <tr><th>Nama</th><th>Jajanan</th><th>Waktu</th></tr>
+        <tr><td>Andi</td><td class="hl-cell">Bakso, Es Teh</td><td>09.30</td></tr>
+        <tr><td>Budi</td><td class="hl-cell">Bakso, Es Teh</td><td>09.32</td></tr>
+        <tr><td>Citra</td><td>Somay, Jus</td><td>09.45</td></tr>
+        <tr><td>Dinda</td><td class="hl-cell">Bakso, Es Teh</td><td>09.35</td></tr>
+      </table>
+    </div>
+    <p class="lead f">✔ Pola: <span class="hl">"Bakso + Es Teh"</span> paling sering dibeli!</p>
+  </section>
+
+  <!-- 9 — Cek Pemahaman #1 -->
+  <section class="slide">
+    <p class="eyebrow">Cek Pemahaman #1</p>
+    <h2 class="title">Kuis Kilat 🎯</h2>
+    <ol class="steps">
+      <li class="f">Soal 1: pola jam istirahat?</li>
+      <li class="f">Soal 2: pola hari hujan?</li>
+      <li class="f">Soal 3: pola antrian kantin?</li>
+    </ol>
+    <p class="sub f" style="margin-top:10px"><span class="chip">Angkat kartu A / B / C!</span></p>
+  </section>
+
+  <!-- 10 — Apa itu Abstraction? -->
+  <section class="slide">
+    <p class="eyebrow">Definisi</p>
+    <h2 class="title">Apa itu Abstraction?</h2>
+    <ul class="bullets">
+      <li class="f">Memilih informasi penting</li>
+      <li class="f">Mengabaikan detail tak perlu</li>
+      <li class="f">Seperti menyaring: ambil sari</li>
+      <li class="f">Tergantung tujuan masalah</li>
+    </ul>
+  </section>
+
+  <!-- 11 — Analogi Peta Transjakarta -->
+  <section class="slide">
+    <p class="eyebrow">Analogi</p>
+    <h2 class="title">Peta Transjakarta</h2>
+    <div class="grid g2">
+      <div class="card f">
+        <h3>Jalanan Nyata</h3>
+        <p>Pohon, toko, lubang jalan — semua ada</p>
+      </div>
+      <div class="card gold f">
+        <h3>Peta Transjakarta</h3>
+        <p>Hanya halte &amp; jalur — yang penting saja</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 — Abstraksi: Data Jadwal -->
+  <section class="slide">
+    <p class="eyebrow">Abstraksi · Data Jadwal</p>
+    <h2 class="title">Data Jadwal</h2>
+    <div class="grid g2">
+      <div class="card gold f">
+        <h3>Penting</h3>
+        <p>Nama mata pelajaran per jam</p>
+      </div>
+      <div class="card f">
+        <h3>Tidak Penting</h3>
+        <p>Nama guru, ruang kelas, jam istirahat</p>
+      </div>
+    </div>
+    <p class="sub f">Tujuan: "Buku apa yang dibawa hari ini?"</p>
+  </section>
+
+  <!-- 13 — Abstraksi: Data Rute -->
+  <section class="slide">
+    <p class="eyebrow">Abstraksi · Data Rute</p>
+    <h2 class="title">Data Rute</h2>
+    <ul class="bullets">
+      <li class="f">Tujuan "tercepat" → <b>Waktu Tempuh</b></li>
+      <li class="f">Tujuan "lewat Pasar" → <b>Titik Berhenti</b></li>
+      <li class="f">Info penting berubah sesuai tujuan</li>
+    </ul>
+  </section>
+
+  <!-- 14 — Abstraksi: Data Kantin -->
+  <section class="slide">
+    <p class="eyebrow">Abstraksi · Data Kantin</p>
+    <h2 class="title">Data Kantin</h2>
+    <ul class="bullets">
+      <li class="f">Tujuan: jajanan paling laku</li>
+      <li class="f">Penting: kolom <b>Jajanan</b></li>
+      <li class="f">Tidak penting: nama murid</li>
+    </ul>
+  </section>
+
+  <!-- 15 — Hubungan Keduanya -->
+  <section class="slide">
+    <p class="eyebrow">Sintesis</p>
+    <h2 class="title">Hubungan Keduanya</h2>
+    <div class="grid g2">
+      <div class="card f">
+        <h3>Pattern</h3>
+        <p>"Apa yang berulang?"</p>
+        <p><small>Contoh: Selasa &amp; Kamis sama</small></p>
+      </div>
+      <div class="card gold f">
+        <h3>Abstraction</h3>
+        <p>"Apa yang dibutuhkan?"</p>
+        <p><small>Contoh: cukup lihat kolom mapel</small></p>
+      </div>
+    </div>
+    <p class="lead f">Keduanya bekerja beriringan ✨</p>
+  </section>
+
+  <!-- 16 — Studi Kasus -->
+  <section class="slide">
+    <p class="eyebrow">Studi Kasus</p>
+    <h2 class="title">Sistem Antar-Jemput</h2>
+    <div class="f">
+      <table style="font-size:17px">
+        <tr><th>Rute</th><th>Titik Berhenti</th><th>Waktu</th><th>Penumpang</th></tr>
+        <tr><td>A</td><td>Rumah → Pasar → Sekolah</td><td>15 mnt</td><td>12 murid</td></tr>
+        <tr><td>B</td><td>Rumah → Masjid → Pasar → Sekolah</td><td>20 mnt</td><td>8 murid</td></tr>
+        <tr><td>C</td><td>Rumah → Taman → Pasar → Sekolah</td><td>18 mnt</td><td>10 murid</td></tr>
+        <tr><td>D</td><td>Rumah → Pasar → Taman → Sekolah</td><td>22 mnt</td><td>5 murid</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 17 — Tugas Kelompok -->
+  <section class="slide">
+    <p class="eyebrow">Cooperative Learning</p>
+    <h2 class="title">Tugas Kelompok (10 Menit)</h2>
+    <ol class="steps">
+      <li class="f">Identifikasi pola rute</li>
+      <li class="f">Tujuan "paling diminati" → info penting?</li>
+      <li class="f">Tujuan berubah: "tercepat" → masih sama?</li>
+      <li class="f">Simpulkan rute terbaik</li>
+    </ol>
+  </section>
+
+  <!-- 18 — Presentasi & Diskusi -->
+  <section class="slide">
+    <p class="eyebrow">Presentasi</p>
+    <h2 class="title">Presentasi &amp; Diskusi</h2>
+    <ul class="bullets">
+      <li class="f">2 kelompok presentasi</li>
+      <li class="f">Kelompok lain menanggapi</li>
+      <li class="f">Guru mengonfirmasi jawaban</li>
+    </ul>
+  </section>
+
+  <!-- 19 — Refleksi -->
+  <section class="slide">
+    <p class="eyebrow">Refleksi</p>
+    <h2 class="title">Refleksi Pembelajaran</h2>
+    <ul class="bullets">
+      <li class="f">🔍 Pola apa paling mudah ditemukan?</li>
+      <li class="f">💡 Pernahkah kalian melakukan abstraksi tanpa sadar?</li>
+      <li class="f">😊 Bagaimana perasaanmu hari ini?</li>
+    </ul>
+  </section>
+
+  <!-- 20 — Penutup -->
+  <section class="slide cover" style="align-items:flex-start">
+    <p class="eyebrow f">SMP NEGERI 19 KOTA BEKASI · TIM MGMP INFORMATIKA</p>
+    <h1 class="f" style="font-size:56px">Penutup &amp; Tindak Lanjut</h1>
+    <div class="rule f"></div>
+    <ul class="bullets">
+      <li class="f">Pattern + Abstraction = masalah lebih mudah</li>
+      <li class="f">PR: catat 1 pola &amp; 1 abstraksi di rumah</li>
+      <li class="f">Terima kasih! 👋</li>
+    </ul>
+    <div class="chips f">
+      <span class="chip">Informatika Kelas VIII</span>
+      <span class="chip">Berpikir Komputasional</span>
+    </div>
+  </section>
+
+</div>
+
+<div id="bar"></div>
+<div id="hint">Klik / tekan → untuk lanjut</div>
+<div id="hud">
+  <button id="btnPrev" title="Sebelumnya">◀</button>
+  <span id="counter">1 / 20</span>
+  <button id="btnNext" title="Berikutnya">▶</button>
+  <button id="btnFull" title="Layar penuh">⛶</button>
+</div>
+
+<script>
+(function(){
+  const stage   = document.getElementById('stage');
+  const slides  = Array.from(document.querySelectorAll('.slide'));
+  const bar     = document.getElementById('bar');
+  const counter = document.getElementById('counter');
+  const hint    = document.getElementById('hint');
+  let cur = 0;
+
+  function resize(){
+    const s = Math.min(window.innerWidth / 1280, (window.innerHeight - 70) / 720);
+    stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function showSlide(i, revealAll){
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === cur));
+    const frags = slides[cur].querySelectorAll('.f');
+    frags.forEach(f => f.classList.remove('show'));
+    if (revealAll) frags.forEach(f => f.classList.add('show'));
+    updateHud();
+  }
+
+  function updateHud(){
+    counter.textContent = (cur + 1) + ' / ' + slides.length;
+    bar.style.width = ((cur + 1) / slides.length * 100) + '%';
+    if (cur > 0) hint.style.opacity = 0;
+  }
+
+  function next(){
+    const pending = slides[cur].querySelectorAll('.f:not(.show)');
+    if (pending.length) { pending[0].classList.add('show'); }
+    else if (cur < slides.length - 1) { showSlide(cur + 1, false); }
+  }
+
+  function prev(){
+    const shown = slides[cur].querySelectorAll('.f.show');
+    if (shown.length) { shown[shown.length - 1].classList.remove('show'); }
+    else if (cur > 0) { showSlide(cur - 1, true); }
+  }
+
+  document.getElementById('btnNext').addEventListener('click', e => { e.stopPropagation(); next(); });
+  document.getElementById('btnPrev').addEventListener('click', e => { e.stopPropagation(); prev(); });
+  document.getElementById('btnFull').addEventListener('click', e => {
+    e.stopPropagation();
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  });
+
+  document.addEventListener('click', e => {
+    if (e.target.closest('#hud')) return;
+    next();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight','ArrowDown',' ','PageDown','Enter'].includes(e.key)) { e.preventDefault(); next(); }
+    if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+    if (e.key === 'Home') showSlide(0, false);
+    if (e.key === 'End')  showSlide(slides.length - 1, true);
+    if (e.key.toLowerCase() === 'f') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  showSlide(0, false);
+})();
+</script>
+</body>
+</html>
